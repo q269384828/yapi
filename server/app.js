@@ -15,25 +15,32 @@ require('./utils/notice')
 
 const Koa = require('koa');
 const koaStatic = require('koa-static');
-// const bodyParser = require('koa-bodyparser');
 const koaBody = require('koa-body');
 const router = require('./router.js');
 
 global.storageCreator = storageCreator;
+
 let indexFile = process.argv[2] === 'dev' ? 'dev.html' : 'index.html';
 
 const app = websockify(new Koa());
+
 app.proxy = true;
 yapi.app = app;
 
-// app.use(bodyParser({multipart: true}));
-app.use(koaBody({ multipart: true, jsonLimit: '2mb', formLimit: '1mb', textLimit: '1mb' }));
+app.use(koaBody({
+  multipart: true,// 支持文件上传 
+  jsonLimit: '2mb', 
+  formLimit: '1mb', 
+  textLimit: '1mb'
+}));
+
 app.use(mockServer);
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 websocket(app);
 
+// 拦截上下文
 app.use(async (ctx, next) => {
   if (/^\/(?!api)[a-zA-Z0-9\/\-_]*$/.test(ctx.path)) {
     ctx.path = '/';
@@ -59,6 +66,6 @@ app.use(koaStatic(yapi.path.join(yapi.WEBROOT, 'static'), { index: indexFile, gz
 app.listen(yapi.WEBCONFIG.port);
 commons.log(
   `服务已启动，请打开下面链接访问: \nhttp://127.0.0.1${
-    yapi.WEBCONFIG.port == '80' ? '' : ':' + yapi.WEBCONFIG.port
+  yapi.WEBCONFIG.port == '80' ? '' : ':' + yapi.WEBCONFIG.port
   }/`
 );
